@@ -68,7 +68,7 @@ object Convert {
         var maned = matcher.group(2).lowercase(Locale.getDefault())
         val ar = matcher.group(3)
 
-        // Fjern eventuelle punktum fra måneden
+        //Remove any periods from the month
         maned = maned.replace(".", "").trim { it <= ' ' }
 
         val langManed = KORT_TIL_LANG[maned]
@@ -122,7 +122,7 @@ object Convert {
         val time = matcher.group(4)
         val minutt = matcher.group(5)
 
-        // Fjern eventuelle punktum fra måneden
+        //Remove any periods from the month
         maned = maned.replace(".", "").trim { it <= ' ' }
 
         val langManed = KORT_TIL_LANG[maned]
@@ -156,7 +156,7 @@ object Convert {
         val kortManed = LANG_TIL_KORT[maned]
         requireNotNull(kortManed) { "Unknown month : $maned" }
 
-        // Håndter spesialtilfelle for "mai" - ingen punktum
+        // Handle special case for "mai" - no period
         val formatertManed = if (kortManed == "mai") kortManed else "$kortManed."
 
         return String.format("%s. %s %s %s:%s", dag, formatertManed, ar, time, minutt)
