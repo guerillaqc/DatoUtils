@@ -4,7 +4,7 @@ import java.util.*
 import java.util.regex.Pattern
 
 /**
- * Utility class for converting between between Norwegian dat formats
+ * Utility class for converting between between date formats (Norwegian and English)
  */
 object Convert {
     // Map from short to long names of month in Norwegian
@@ -42,6 +42,12 @@ object Convert {
     // Pattern for for matching Norwegian date format: dag. mnd. år OR dag. måned år
     private val NORSK_DATO_PATTERN: Pattern = Pattern.compile(
         "^\\s*(\\d{1,2})\\.\\s*([a-zæøå]+)\\.?\\s*(\\d{4})\\s*$",
+        Pattern.CASE_INSENSITIVE
+    )
+
+    // Pattern for matching Norwegian date format with time: dag. mnd. år HH:mm
+    private val NORSK_DATO_MED_TID_PATTERN: Pattern = Pattern.compile(
+        "^\\s*(\\d{1,2})\\.\\s*([a-zæøå]+)\\.?\\s*(\\d{4})\\s+(\\d{1,2}):(\\d{2})\\s*$",
         Pattern.CASE_INSENSITIVE
     )
 
@@ -96,4 +102,64 @@ object Convert {
 
         return String.format("%s. %s. %s", dag, kortManed, ar)
     }
+
+    /**
+     * Convert from short to long format on Norwegian date with time
+     * @param kortDato date in the format "29. jan. 2025 13:15" or similar
+     * @return date in the format "29. januar 2025 13:15"
+     * @throws IllegalArgumentException if the date cannot be parsed
+     */
+    fun kortTilLangtFormatMedTidNorsk(kortDato: String): String {
+        val matcher = NORSK_DATO_MED_TID_PATTERN.matcher(kortDato.trim { it <= ' ' })
+        require(matcher.matches()) {
+            "Invalid date format: " + kortDato +
+                    ". Expected format: 'dd. MMM. yyyy HH:mm' or 'dd. MMM yyyy HH:mm'"
+        }
+
+        val dag = matcher.group(1)
+        var maned = matcher.group(2).lowercase(Locale.getDefault())
+        val ar = matcher.group(3)
+        val time = matcher.group(4)
+        val minutt = matcher.group(5)
+
+        // Fjern eventuelle punktum fra måneden
+        maned = maned.replace(".", "").trim { it <= ' ' }
+
+        val langManed = KORT_TIL_LANG[maned]
+        requireNotNull(langManed) { "Unknown month : $maned" }
+
+        return String.format("%s. %s %s %s:%s", dag, langManed, ar, time, minutt)
+    }
+
+    /**
+     * Convert from long to short format of Norwegian date with time
+     * @param langDato date in the format "29. januar 2025 13:15" or similar
+     * @return date in the format "29. jan. 2025 13:15"
+     * @throws IllegalArgumentException if the date cannot be parsed
+     */
+    fun langtTilKortFormatMedTidNorsk(langDato: String): String {
+        val matcher = NORSK_DATO_MED_TID_PATTERN.matcher(langDato.trim { it <= ' ' })
+        require(matcher.matches()) {
+            "Invalid date format: " + langDato +
+                    ". Expected format: 'dd. MMMM yyyy HH:mm' or 'dd. MMMM. yyyy HH:mm'"
+        }
+
+        val dag = matcher.group(1)
+        var maned = matcher.group(2).lowercase(Locale.getDefault())
+        val ar = matcher.group(3)
+        val time = matcher.group(4)
+        val minutt = matcher.group(5)
+
+        //Remove any periods from the month
+        maned = maned.replace(".", "").trim { it <= ' ' }
+
+        val kortManed = LANG_TIL_KORT[maned]
+        requireNotNull(kortManed) { "Unknown month : $maned" }
+
+        // Håndter spesialtilfelle for "mai" - ingen punktum
+        val formatertManed = if (kortManed == "mai") kortManed else "$kortManed."
+
+        return String.format("%s. %s %s %s:%s", dag, formatertManed, ar, time, minutt)
+    }
+
 }
